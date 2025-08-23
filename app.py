@@ -28,12 +28,15 @@ questions = []
 @app.route("/questions", methods=["POST"])
 def create_question():
     """
-    Endpoint para crear preguntas con título, descripción y privacidad.
+    Endpoint para crear preguntas con título, descripción, privacidad y autor.
     
     Request Body (JSON):
         title (str): Título. (Debe tener entre 5 y 80 caracteres)
         description (str, opcional): Descripción. (Máximo 300 caracteres)
         anonymous (bool, opcional): La pregunta debe publicarse en anónimo. (por defecto: False)
+        author_name (str, opcional): Nombre del autor. (Máximo 50 caracteres)
+        
+    Nota: Debe proporcionar author_name O marcar anonymous=True, no ambos vacíos.
 
     Returns:
         tuple: Una tupla con la respuesta JSON y el código HTTP.
@@ -43,7 +46,7 @@ def create_question():
                 - id (int): Identificador 
                 - title (str): Título
                 - description (str): Descripción
-                - author (str): "Anónimo" o "Usuario"
+                - author (str): "Anónimo" o nombre del autor
         
         En caso negativo:
             dict: Diccionario con mensaje de error:
@@ -54,6 +57,7 @@ def create_question():
     title = data.get("title", "")
     description = data.get("description", "")
     anonymous = data.get("anonymous", False)
+    author_name = data.get("author_name", "").strip()
 
     # Validación del título
     if not (5 <= len(title) <= 80):
@@ -63,12 +67,26 @@ def create_question():
     if len(description) > 300:
         return jsonify({"error": "La descripción supera los 300 caracteres"}), 400
 
+    # Validación del nombre del autor (si se proporciona)
+    if author_name and len(author_name) > 50:
+        return jsonify({"error": "El nombre del autor no puede superar los 50 caracteres"}), 400
+
+    # Validación: debe elegir entre anónimo o proporcionar nombre
+    if not anonymous and not author_name:
+        return jsonify({"error": "Debe proporcionar un nombre o marcar la pregunta como anónima"}), 400
+
+    # Determinar el autor según las opciones
+    if anonymous:
+        author = "Anónimo"
+    else:
+        author = author_name  # Ya validamos que existe si no es anónimo
+
     # Crear el objeto con un ID
     question = {
         "id": len(questions) + 1,
         "title": title,
         "description": description,
-        "author": "Anónimo" if anonymous else "Usuario",
+        "author": author,
     }
     
     # Agregar la pregunta
