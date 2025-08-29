@@ -176,8 +176,8 @@ def load_data():
     if os.path.exists(file):
         with open(file, "r", encoding="utf-8") as f:
             data = json.load(f)
-            questions = data.get("questions", [])
-            answers = data.get("answers", {})
+            questions = data.get("questions", [])   
+            answers = {int(k): v for k, v in data.get("answers", {}).items()}
 
 load_data()
 
