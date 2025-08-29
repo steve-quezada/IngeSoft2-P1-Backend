@@ -17,6 +17,9 @@ Versión: 1.0.0
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import json, os
+
+file = "data.json"
 
 # Configuración Flask
 app = Flask(__name__)
@@ -91,7 +94,7 @@ def create_question():
     
     # Agregar la pregunta
     questions.append(question)
-    
+    save_data()  
     # Retornar la pregunta
     return jsonify(question), 201
 
@@ -116,6 +119,67 @@ def list_questions():
     """
     # Retornar lista de preguntas en orden LIFO
     return jsonify(list(reversed(questions)))
+
+answers = {}  # { question_id: [ {id, text, votes}, ... ] }
+
+@app.route("/questions/<int:qid>/answers", methods=["POST"])
+def create_answer(qid):
+    data = request.json
+    text = data.get("text", "").strip()
+
+    if not text:
+        return jsonify({"error": "La respuesta no puede estar vacía"}), 400
+
+    # Crear estructura de respuestas si no existe
+    if qid not in answers:
+        answers[qid] = []
+
+    answer = {
+        "id": len(answers[qid]) + 1,
+        "text": text,
+        "votes": 0
+    }
+    answers[qid].append(answer)
+
+    save_data()  
+    return jsonify(answer), 201
+
+
+@app.route("/questions/<int:qid>/answers", methods=["GET"])
+def list_answers(qid):
+    return jsonify(answers.get(qid, [])), 200
+
+
+@app.route("/questions/<int:qid>/answers/<int:aid>/vote", methods=["POST"])
+def vote_answer(qid, aid):
+    data = request.json
+    change = data.get("change", 0)
+
+    if qid not in answers:
+        return jsonify({"error": "Pregunta no encontrada"}), 404
+
+    for answer in answers[qid]:
+        if answer["id"] == aid:
+            answer["votes"] += change
+            save_data()
+            return jsonify(answer), 200
+
+    return jsonify({"error": "Respuesta no encontrada"}), 404
+
+
+def save_data():
+    with open(file, "w", encoding="utf-8") as f:
+        json.dump({"questions": questions, "answers": answers}, f, ensure_ascii=False, indent=2)
+
+def load_data():
+    global questions, answers
+    if os.path.exists(file):
+        with open(file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            questions = data.get("questions", [])
+            answers = data.get("answers", {})
+
+load_data()
 
 if __name__ == "__main__":
     """
