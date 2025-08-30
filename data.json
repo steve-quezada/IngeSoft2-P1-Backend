@@ -1,0 +1,29 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "title": "sdfdsfs",
+      "description": "asdasdasdas",
+      "author": "Anónimo"
+    }
+  ],
+  "answers": {
+    "1": [
+      {
+        "id": 1,
+        "text": "hsdajdsghjasdhjashd",
+        "votes": 0
+      },
+      {
+        "id": 2,
+        "text": "asdhjashdausdjasdhjasdhajshdja",
+        "votes": 0
+      },
+      {
+        "id": 3,
+        "text": "dghdfghdfdhdghdgghdg",
+        "votes": 0
+      }
+    ]
+  }
+}

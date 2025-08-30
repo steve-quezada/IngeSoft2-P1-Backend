@@ -1,104 +1,58 @@
 """
 P1-Backend - API REST/Flask
 
-Módulo que implementa una API que permite:
-- Crear preguntas con título y descripción.
-- Listar preguntas.
+Aplicación Flask que implementa una API REST para un foro de preguntas y respuestas.
 
 Endpoints disponibles:
 - POST /questions: Crear nueva pregunta
 - GET /questions: Listar todas las preguntas
+- POST /questions/<id>/answers: Crear respuesta a una pregunta
+- GET /questions/<id>/answers: Listar respuestas de una pregunta
+- POST /questions/<id>/answers/<id>/vote: Votar por una respuesta
 
 Autor: etnicst, steve-quezada, diego-sc96-crypto
 
 Fecha: Agosto 2025
-Versión: 1.0.0
+Versión: 2.0.0 (Refactorizada)
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask
+from flask_cors import CORS
+from config.config import get_config
+from src.routes.questions import questions_bp
 
-# Configuración Flask
-app = Flask(__name__)
-
-# Almacenamiento para las preguntas
-questions = []
-
-@app.route("/questions", methods=["POST"])
-def create_question():
+def create_app():
     """
-    Endpoint para crear preguntas con título, descripción y privacidad.
-    
-    Request Body (JSON):
-        title (str): Título. (Debe tener entre 5 y 80 caracteres)
-        description (str, opcional): Descripción. (Máximo 300 caracteres)
-        anonymous (bool, opcional): La pregunta debe publicarse en anónimo. (por defecto: False)
-
-    Returns:
-        tuple: Una tupla con la respuesta JSON y el código HTTP.
-        
-        En caso positivo:
-            dict: Diccionario con los datos:
-                - id (int): Identificador 
-                - title (str): Título
-                - description (str): Descripción
-                - author (str): "Anónimo" o "Usuario"
-        
-        En caso negativo:
-            dict: Diccionario con mensaje de error:
-                - error (str): Descripción del error
+    Factory function para crear la aplicación Flask
     """
-    # Obtener datos del cuerpo de JSON
-    data = request.json
-    title = data.get("title", "")
-    description = data.get("description", "")
-    anonymous = data.get("anonymous", False)
-
-    # Validación del título
-    if not (5 <= len(title) <= 80):
-        return jsonify({"error": "El título debe tener entre 5 y 80 caracteres"}), 400
+    # Obtener configuración
+    config = get_config()
     
-    # Validación de la descripción
-    if len(description) > 300:
-        return jsonify({"error": "La descripción supera los 300 caracteres"}), 400
-
-    # Crear el objeto con un ID
-    question = {
-        "id": len(questions) + 1,
-        "title": title,
-        "description": description,
-        "author": "Anónimo" if anonymous else "Usuario",
-    }
+    # Crear aplicación Flask
+    app = Flask(__name__)
     
-    # Agregar la pregunta
-    questions.append(question)
+    # Configurar CORS
+    CORS(app)
     
-    # Retornar la pregunta
-    return jsonify(question), 201
-
-@app.route("/questions", methods=["GET"])
-def list_questions():
-    """    
-    Endpoint que retorna las preguntas ordenadas de la más recientes a la más antigua.
+    # Registrar blueprints
+    app.register_blueprint(questions_bp)
     
-    Returns:
-        tuple: Una tupla con la respuesta JSON y el código HTTP.
-        
-        En caso positivo:
-            list: Lista de diccionarios con:
-                - id (int): Identificador
-                - title (str): Título 
-                - description (str): Descripción 
-                - author (str): "Anónimo" o "Usuario"
+    # Configuración adicional
+    app.config['DEBUG'] = config.DEBUG
     
-    Note:
-        Las preguntas se retornan en orden LIFO (Last In, First Out).
-    
-    """
-    # Retornar lista de preguntas en orden LIFO
-    return jsonify(list(reversed(questions)))
+    return app
 
 if __name__ == "__main__":
     """
-    Punto de entrada.
+    Punto de entrada de la aplicación
     """
-    app.run(debug=True)
+    # Crear aplicación
+    app = create_app()
+    config = get_config()
+    
+    # Ejecutar aplicación
+    app.run(
+        host=config.HOST,
+        port=config.PORT,
+        debug=config.DEBUG
+    )

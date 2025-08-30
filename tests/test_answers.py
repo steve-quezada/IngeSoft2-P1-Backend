@@ -1,8 +1,3 @@
-"""
-Tests para funcionalidad de respuestas - Legacy
-Mantiene compatibilidad con la estructura refactorizada
-"""
-
 def test_create_answer(client):
     
     q = client.post("/questions", json={
