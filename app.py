@@ -39,6 +39,8 @@ def create_app():
     
     # Configuración adicional
     app.config['DEBUG'] = config.DEBUG
+    
+    return app
 
 if __name__ == "__main__":
     """
