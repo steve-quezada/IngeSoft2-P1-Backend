@@ -24,12 +24,30 @@ Sistema backend con Flask que implementa una API REST para un foro de preguntas 
 
 ```
 P1-Backend/
-├── app.py                    # Aplicación principal Flask
-├── requirements.txt          # Dependencias del proyecto
-├── tests/
-│   └── test_questions.py     # [Futuras] Pruebas unitarias
-├── .gitignore                # Archivos ignorados por Git
-└── README.md                 # Documentación del proyecto
+├── app.py                          # Punto de entrada principal (Application Factory)
+├── requirements.txt                # Dependencias del proyecto
+├── data.json                       # Archivo de persistencia de datos
+├── config/                         # Configuración de la aplicación
+│   ├── __init__.py
+│   └── config.py                   # Configuraciones por ambiente
+├── src/                            # Código fuente principal
+│   ├── __init__.py
+│   ├── models/                     # Modelos de datos
+│   │   ├── __init__.py
+│   │   └── question.py             # Modelos de preguntas y respuestas
+│   ├── services/                   # Lógica de negocio
+│   │   ├── __init__.py
+│   │   └── question_service.py     # Servicio de preguntas y respuestas
+│   ├── routes/                     # Controladores/Endpoints
+│   │   ├── __init__.py
+│   │   └── questions.py            # Rutas de preguntas y respuestas
+│   └── utils/                      # Utilidades
+│       ├── __init__.py
+│       └── validators.py           # Validadores de datos
+└── tests/                          # Pruebas unitarias
+    ├── README_tests.md
+    ├── test_answers.py
+    └── test_questions.py
 ```
 
 #### Instalación y Configuración
