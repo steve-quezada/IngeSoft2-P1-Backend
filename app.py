@@ -177,7 +177,7 @@ def load_data():
         with open(file, "r", encoding="utf-8") as f:
             data = json.load(f)
             questions = data.get("questions", [])
-            answers = data.get("answers", {})
+            answers = {int(k): v for k, v in data.get("answers", {}).items()}
 
 load_data()
 
