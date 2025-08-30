@@ -179,6 +179,8 @@ def load_data():
             questions = data.get("questions", [])   
             answers = {int(k): v for k, v in data.get("answers", {}).items()}
 
+            
+
 load_data()
 
 if __name__ == "__main__":
