@@ -13,7 +13,11 @@ Versión: 1.0.0
 """
 
 import json
-from app import app
+from app import create_app
+
+# Crear instancia de la aplicación para tests legacy
+app = create_app()
+app.config['TESTING'] = True
 
 def test_create_question_success():
     """
@@ -44,10 +48,6 @@ def test_create_question_success():
         2. Autor = "Anónimo" - Valida funcionalidad anónima
         3. Respuesta en formato JSON válido
     
-    Assertions:
-        assert response.status_code == 201
-        assert data["author"] == "Anónimo"
-    
     Test Coverage:
         - Endpoint: POST /questions
         - Funcionalidad: Generación de pregunta anónima
@@ -59,33 +59,6 @@ def test_create_question_success():
             - Status code distinto a 201
             - Autor diferente a "Anónimo"
             - Respuesta JSON generada incorrectamente 
-    
-    Examples:
-        >>> # Ejecutar esta prueba específica
-        >>> pytest tests/test_questions.py::test_create_question_success -v
-        
-        >>> # Request simulado que realiza la prueba
-        >>> POST /questions
-        >>> Content-Type: application/json
-        >>> {
-        ...     "title": "¿Qué es Python?",
-        ...     "description": "Una breve duda sobre Python",
-        ...     "anonymous": True
-        ... }
-        
-        >>> # Response esperado
-        >>> HTTP/1.1 201 Created
-        >>> Content-Type: application/json
-        >>> {
-        ...     "id": 1,
-        ...     "title": "¿Qué es Python?",
-        ...     "description": "Una breve duda sobre Python",
-        ...     "author": "Anónimo"
-        ... }
-    
-    Note:
-        Esta prueba es fundamental para verificar 2 criterios; que la creación de preguntas funcione correctamente, ya que es la funcionalidad
-        principal del sistema, y además, que el sistema de anonimato esté implementado adecuadamente.
     """
     # Crear cliente de prueba Flask para simular requests HTTP
     client = app.test_client()
@@ -153,33 +126,6 @@ def test_create_question_invalid_title():
         AssertionError: Si la verificación falla:
             - Status code diferente a 400
             - La API no acepta datos que no cumplen con la validación
-    
-    Examples:
-        >>> # Ejecutar esta prueba específica
-        >>> pytest tests/test_questions.py::test_create_question_invalid_title -v
-        
-        >>> # Request simulado que realiza la prueba
-        >>> POST /questions
-        >>> Content-Type: application/json
-        >>> {
-        ...     "title": "Hi",
-        ...     "description": "Muy corto",
-        ...     "anonymous": False
-        ... }
-        
-        >>> # Response esperado
-        >>> HTTP/1.1 400 Bad Request
-        >>> Content-Type: application/json
-        >>> {
-        ...     "error": "El título debe tener entre 5 y 80 caracteres"
-        ... }
-    
-    Note:
-        Esta prueba es crucial para verificar que:
-        1. La validación del lado del servidor funciona correctamente
-        2. Se previene la creación de preguntas con datos inválidos
-        3. Los usuarios reciben feedback claro sobre errores de validación
-        4. El sistema mantiene la integridad de los datos
     """
     # Crear cliente de prueba Flask para simular requests HTTP
     client = app.test_client()
