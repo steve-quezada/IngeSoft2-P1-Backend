@@ -7,11 +7,21 @@ Este directorio contiene todos los tests unitarios para el proyecto P1-Backend.
 ```
 tests/
 ├── conftest.py          # Configuración y fixtures de pytest
+├── test_integration.py  # Test de integración de flujo completo (1 test)
 ├── test_refactored.py   # Test de integración con servidor real
 ├── test_questions.py    # Tests legacy de preguntas (2 tests)
 ├── test_all.py          # PRINCIPAL - Tests unificados (14 tests)
 ├── test_answers.py      # Tests legacy de respuestas (2 tests)
 └── README.md            # Esta documentación
+```
+
+### `test_integration.py`
+
+#### **TEST DE FLUJO COMPLETO** (1 test)
+```python
+def test_complete_flow(client) # Test de integración que valida el flujo completo:
+                               # 1. Crear pregunta   → 2. Obtener preguntas 
+                               # 3. Añadir respuesta → 4. Verificar respuesta
 ```
 
 ### `test_all.py`
@@ -63,6 +73,9 @@ pytest tests/ -v
 
 # Tests unificados
 pytest tests/test_all.py -v
+
+# Test de integración  
+pytest tests/test_integration.py -v
 
 # Tests legacy
 pytest tests/test_questions.py -v
