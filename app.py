@@ -176,10 +176,16 @@ def load_data():
     if os.path.exists(file):
         with open(file, "r", encoding="utf-8") as f:
             data = json.load(f)
+<<<<<<< Updated upstream
             questions = data.get("questions", [])   
             answers = {int(k): v for k, v in data.get("answers", {}).items()}
 
             
+=======
+            questions = data.get("questions", [])
+            answers = {int(k): v for k, v in data.get("answers", {}).items()}
+
+>>>>>>> Stashed changes
 
 load_data()
 
