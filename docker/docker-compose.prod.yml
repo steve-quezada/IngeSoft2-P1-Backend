@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Servicio Backend desde GitHub Container Registry
   backend:
-    image: ghcr.io/etnicst/ingesoft2-p1-backend-backend:main
+    image: ghcr.io/etnicst/ingesoft2-p1-backend:main
     container_name: backend-flask-prod
     ports:
       - "5000:5000"
@@ -25,7 +25,7 @@ services:
 
   # Servicio Frontend desde GitHub Container Registry
   frontend:
-    image: ghcr.io/etnicst/ingesoft2-p1-backend-frontend:main
+    image: ghcr.io/etnicst/ingesoft2-p1-frontend:main
     container_name: frontend-react-prod
     ports:
       - "3000:3000"
