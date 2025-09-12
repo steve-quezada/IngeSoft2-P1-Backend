@@ -12,6 +12,13 @@ questions_bp = Blueprint('questions', __name__)
 # Inicializar servicio
 question_service = QuestionService()
 
+@questions_bp.route("/health", methods=["GET"])
+def health_check():
+    """
+    Endpoint de health check para monitoreo del contenedor
+    """
+    return jsonify({"status": "healthy", "service": "backend"}), 200
+
 @questions_bp.route("/questions", methods=["POST"])
 def create_question():
     """
