@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # Servicio Backend desde GitHub Container Registry
+  backend:
+    image: ghcr.io/etnicst/ingesoft2-p1-backend-backend:main
+    container_name: backend-flask-prod
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+      - PYTHONPATH=/app
+    volumes:
+      - backend_logs:/var/log/supervisor
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Servicio Frontend desde GitHub Container Registry
+  frontend:
+    image: ghcr.io/etnicst/ingesoft2-p1-backend-frontend:main
+    container_name: frontend-react-prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=http://localhost:5000
+    volumes:
+      - frontend_logs:/var/log/supervisor
+    networks:
+      - app-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Volúmenes para persistir logs
+volumes:
+  backend_logs:
+    driver: local
+  frontend_logs:
+    driver: local
+
+# Red personalizada para comunicación entre contenedores
+networks:
+  app-network:
+    driver: bridge
