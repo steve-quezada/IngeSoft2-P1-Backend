@@ -303,9 +303,9 @@ Temporary Items
 # Herramientas de desarrollo
 
 # Docker
-.dockerignore
-docker-compose.override.yml
-.docker/
+# .dockerignore
+# docker-compose.override.yml
+# .docker/
 
 # Terraform
 *.tfstate

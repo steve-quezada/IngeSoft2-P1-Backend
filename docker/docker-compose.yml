@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Servicio Backend (Python/Flask)
+  backend:
+    build:
+      context: ".."  # Un nivel arriba (hacia Proyecto Back/)
+      dockerfile: Dockerfile
+    container_name: backend-flask
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+      - PYTHONPATH=/app
+    volumes:
+      - backend_logs:/var/log/supervisor
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Servicio Frontend (React/Vite)
+  frontend:
+    build:
+      context: "../../Proyecto Front/proyecto-is2"  # Dos niveles arriba, luego al frontend
+      dockerfile: Dockerfile
+    container_name: frontend-react
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=http://localhost:5000
+    volumes:
+      - frontend_logs:/var/log/supervisor
+    networks:
+      - app-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Volúmenes para persistir logs
+volumes:
+  backend_logs:
+    driver: local
+  frontend_logs:
+    driver: local
+
+# Red personalizada para comunicación entre contenedores
+networks:
+  app-network:
+    driver: bridge
