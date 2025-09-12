@@ -7,7 +7,7 @@ class Config:
     """Configuración base de la aplicación"""
     DEBUG = True
     DATA_FILE = "data.json"
-    HOST = "127.0.0.1"
+    HOST = "0.0.0.0"  # Permitir conexiones desde cualquier IP en Docker
     PORT = 5000
     
     # Límites de validación
