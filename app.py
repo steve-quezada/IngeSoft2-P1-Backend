@@ -42,6 +42,9 @@ def create_app():
     
     return app
 
+# Para Gunicorn
+app = create_app()
+
 if __name__ == "__main__":
     """
     Punto de entrada de la aplicación
