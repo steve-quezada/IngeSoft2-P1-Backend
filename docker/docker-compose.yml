@@ -27,7 +27,7 @@ services:
   # Servicio Frontend (React/Vite)
   frontend:
     build:
-      context: "../../Proyecto Front"  # Ruta al directorio del frontend
+      context: "../../../IngeSoft2-P1-Frontend-main"
       dockerfile: Dockerfile
     container_name: frontend-react
     ports:
