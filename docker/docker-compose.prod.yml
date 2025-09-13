@@ -25,7 +25,7 @@ services:
 
   # Servicio Frontend desde GitHub Container Registry
   frontend:
-    image: ghcr.io/etnicst/ingesoft2-p1-frontend:main
+    image: ghcr.io/steve-quezada/ingesoft2-p1-frontend:main
     container_name: frontend-react-prod
     ports:
       - "3000:3000"
