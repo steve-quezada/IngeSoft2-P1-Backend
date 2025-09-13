@@ -45,10 +45,14 @@ class QuestionService:
     
     def get_questions(self) -> List[Question]:
         """Obtiene todas las preguntas ordenadas por más reciente"""
+        # Recargar datos para sincronizar con otros workers
+        self.load_data()
         return list(reversed(self.questions))
     
     def get_question_by_id(self, question_id: int) -> Optional[Question]:
         """Obtiene una pregunta por su ID"""
+        # Recargar datos para sincronizar con otros workers
+        self.load_data()
         for question in self.questions:
             if question.id == question_id:
                 return question
@@ -56,6 +60,9 @@ class QuestionService:
     
     def create_answer(self, question_id: int, request: AnswerRequest) -> Answer:
         """Crea una nueva respuesta para una pregunta"""
+        # Recargar datos para sincronizar con otros workers
+        self.load_data()
+        
         # Validar que la pregunta existe
         if not self.get_question_by_id(question_id):
             raise ValidationError("Pregunta no encontrada")
@@ -82,6 +89,8 @@ class QuestionService:
     
     def get_answers(self, question_id: int) -> List[Answer]:
         """Obtiene todas las respuestas de una pregunta"""
+        # Recargar datos para sincronizar con otros workers
+        self.load_data()
         return self.answers.get(question_id, [])
     
     def vote_answer(self, question_id: int, answer_id: int, change: int) -> Answer:

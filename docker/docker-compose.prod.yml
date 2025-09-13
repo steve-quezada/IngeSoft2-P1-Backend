@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
-  # Servicio Backend desde GitHub Container Registry
+  # Servicio Backend con sincronización completa multi-worker
   backend:
-    image: ghcr.io/etnicst/ingesoft2-p1-backend:main
+    image: ghcr.io/steve-quezada/ingesoft2-p1-backend:main
     container_name: backend-flask-prod
     ports:
       - "5000:5000"
@@ -13,6 +11,7 @@ services:
       - PYTHONPATH=/app
     volumes:
       - backend_logs:/var/log/supervisor
+      - backend_data:/app
     networks:
       - app-network
     restart: unless-stopped
@@ -46,9 +45,11 @@ services:
       retries: 3
       start_period: 40s
 
-# Volúmenes para persistir logs
+# Volúmenes para persistir logs y datos
 volumes:
   backend_logs:
+    driver: local
+  backend_data:
     driver: local
   frontend_logs:
     driver: local

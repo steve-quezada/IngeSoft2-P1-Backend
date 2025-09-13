@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Servicio Backend (Python/Flask)
   backend:
@@ -15,6 +13,7 @@ services:
       - PYTHONPATH=/app
     volumes:
       - backend_logs:/var/log/supervisor
+      - backend_data:/app
     networks:
       - app-network
     restart: unless-stopped
@@ -53,6 +52,8 @@ services:
 # Volúmenes para persistir logs
 volumes:
   backend_logs:
+    driver: local
+  backend_data:
     driver: local
   frontend_logs:
     driver: local
