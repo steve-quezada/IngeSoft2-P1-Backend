@@ -1,12 +1,24 @@
+
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+import pytest
+from app import create_app
+
+@pytest.fixture
+def client():
+    app = create_app()
+    app.config['TESTING'] = True
+    with app.test_client() as client:
+        yield client
+
 def test_create_answer(client):
-    
     q = client.post("/questions", json={
         "title": "Pregunta con respuestas",
         "description": "",
         "anonymous": True
     }).get_json()
 
-    
     response = client.post(f"/questions/{q['id']}/answers", json={
         "text": "Esta es una respuesta de prueba"
     })
