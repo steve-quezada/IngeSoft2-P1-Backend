@@ -1,26 +1,31 @@
 """
 Servicio para manejar la lógica de negocio de preguntas y respuestas
+Versión PostgreSQL - usa base de datos en lugar de JSON
 """
-import json
-import os
-from typing import List, Optional, Dict, Any
-from config.config import get_config
+from typing import List, Optional
+from datetime import datetime
+from config.database import get_db_cursor, init_db_pool
 from src.models.question import Question, QuestionRequest, Answer, AnswerRequest
 from src.utils.validators import QuestionValidator, AnswerValidator, ValidationError
+import logging
 
-config = get_config()
+logger = logging.getLogger(__name__)
+
 
 class QuestionService:
-    """Servicio para manejar preguntas y respuestas"""
+    """Servicio para manejar preguntas y respuestas con PostgreSQL"""
     
     def __init__(self):
-        self.data_file = config.DATA_FILE
-        self.questions: List[Question] = []
-        self.answers: Dict[int, List[Answer]] = {}
-        self.load_data()
+        """Inicializa el servicio y el pool de conexiones"""
+        try:
+            init_db_pool(min_conn=2, max_conn=10)
+            logger.info("QuestionService inicializado con PostgreSQL")
+        except Exception as e:
+            logger.error(f"Error al inicializar QuestionService: {e}")
+            raise
     
     def create_question(self, request: QuestionRequest) -> Question:
-        """Crea una nueva pregunta"""
+        """Crea una nueva pregunta en la base de datos"""
         # Validar datos
         QuestionValidator.validate_question_data(
             title=request.title,
@@ -29,40 +34,97 @@ class QuestionService:
             author_name=request.author_name
         )
         
-        # Crear la pregunta
-        question = Question(
-            id=self._get_next_question_id(),
-            title=request.title.strip(),
-            description=request.description.strip(),
-            author=request.get_author()
-        )
+        # Insertar en la base de datos
+        query = """
+            INSERT INTO questions (title, description)
+            VALUES (%s, %s)
+            RETURNING id, title, description, created_at
+        """
         
-        # Guardar
-        self.questions.append(question)
-        self.save_data()
-        
-        return question
+        try:
+            with get_db_cursor() as cursor:
+                cursor.execute(query, (
+                    request.title.strip(),
+                    request.description.strip()
+                ))
+                
+                row = cursor.fetchone()
+                
+                question = Question(
+                    id=row[0],
+                    title=row[1],
+                    description=row[2],
+                    author=request.get_author()
+                )
+                
+                logger.info(f"Pregunta creada: ID={question.id}")
+                return question
+                
+        except Exception as e:
+            logger.error(f"Error al crear pregunta: {e}")
+            raise ValidationError(f"Error al crear pregunta: {str(e)}")
     
     def get_questions(self) -> List[Question]:
         """Obtiene todas las preguntas ordenadas por más reciente"""
-        # Recargar datos para sincronizar con otros workers
-        self.load_data()
-        return list(reversed(self.questions))
+        query = """
+            SELECT id, title, description, created_at
+            FROM questions
+            ORDER BY created_at DESC
+        """
+        
+        try:
+            with get_db_cursor() as cursor:
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                
+                questions = [
+                    Question(
+                        id=row[0],
+                        title=row[1],
+                        description=row[2],
+                        author="anonymous"  # Por ahora no guardamos autor
+                    )
+                    for row in rows
+                ]
+                
+                logger.info(f"{len(questions)} preguntas obtenidas")
+                return questions
+                
+        except Exception as e:
+            logger.error(f"Error al obtener preguntas: {e}")
+            raise ValidationError(f"Error al obtener preguntas: {str(e)}")
     
     def get_question_by_id(self, question_id: int) -> Optional[Question]:
         """Obtiene una pregunta por su ID"""
-        # Recargar datos para sincronizar con otros workers
-        self.load_data()
-        for question in self.questions:
-            if question.id == question_id:
+        query = """
+            SELECT id, title, description, created_at
+            FROM questions
+            WHERE id = %s
+        """
+        
+        try:
+            with get_db_cursor() as cursor:
+                cursor.execute(query, (question_id,))
+                row = cursor.fetchone()
+                
+                if not row:
+                    return None
+                
+                question = Question(
+                    id=row[0],
+                    title=row[1],
+                    description=row[2],
+                    author="anonymous"
+                )
+                
                 return question
-        return None
+                
+        except Exception as e:
+            logger.error(f"Error al obtener pregunta {question_id}: {e}")
+            raise ValidationError(f"Error al obtener pregunta: {str(e)}")
     
     def create_answer(self, question_id: int, request: AnswerRequest) -> Answer:
         """Crea una nueva respuesta para una pregunta"""
-        # Recargar datos para sincronizar con otros workers
-        self.load_data()
-        
         # Validar que la pregunta existe
         if not self.get_question_by_id(question_id):
             raise ValidationError("Pregunta no encontrada")
@@ -70,98 +132,121 @@ class QuestionService:
         # Validar el texto de la respuesta
         AnswerValidator.validate_text(request.text)
         
-        # Crear estructura de respuestas si no existe
-        if question_id not in self.answers:
-            self.answers[question_id] = []
+        # Insertar en la base de datos
+        query = """
+            INSERT INTO answers (question_id, text, votes)
+            VALUES (%s, %s, 0)
+            RETURNING id, text, votes, created_at
+        """
         
-        # Crear la respuesta
-        answer = Answer(
-            id=self._get_next_answer_id(question_id),
-            text=request.text.strip(),
-            votes=0
-        )
-        
-        # Guardar
-        self.answers[question_id].append(answer)
-        self.save_data()
-        
-        return answer
+        try:
+            with get_db_cursor() as cursor:
+                cursor.execute(query, (question_id, request.text.strip()))
+                row = cursor.fetchone()
+                
+                answer = Answer(
+                    id=row[0],
+                    text=row[1],
+                    votes=row[2]
+                )
+                
+                logger.info(f"Respuesta creada: ID={answer.id} para pregunta {question_id}")
+                return answer
+                
+        except Exception as e:
+            logger.error(f"Error al crear respuesta: {e}")
+            raise ValidationError(f"Error al crear respuesta: {str(e)}")
     
     def get_answers(self, question_id: int) -> List[Answer]:
-        """Obtiene todas las respuestas de una pregunta"""
-        # Recargar datos para sincronizar con otros workers
-        self.load_data()
-        return self.answers.get(question_id, [])
+        """Obtiene todas las respuestas de una pregunta ordenadas por votos"""
+        query = """
+            SELECT id, text, votes, created_at
+            FROM answers
+            WHERE question_id = %s
+            ORDER BY votes DESC, created_at ASC
+        """
+        
+        try:
+            with get_db_cursor() as cursor:
+                cursor.execute(query, (question_id,))
+                rows = cursor.fetchall()
+                
+                answers = [
+                    Answer(
+                        id=row[0],
+                        text=row[1],
+                        votes=row[2]
+                    )
+                    for row in rows
+                ]
+                
+                logger.info(f"{len(answers)} respuestas obtenidas para pregunta {question_id}")
+                return answers
+                
+        except Exception as e:
+            logger.error(f"Error al obtener respuestas: {e}")
+            raise ValidationError(f"Error al obtener respuestas: {str(e)}")
     
     def vote_answer(self, question_id: int, answer_id: int, change: int) -> Answer:
-        """Vota por una respuesta"""
+        """Vota por una respuesta (incrementa o decrementa votos)"""
         # Validar el cambio de votos
         AnswerValidator.validate_vote_change(change)
         
-        # Verificar que la pregunta existe
-        if question_id not in self.answers:
-            raise ValidationError("Pregunta no encontrada")
-        
-        # Buscar la respuesta
-        for answer in self.answers[question_id]:
-            if answer.id == answer_id:
-                answer.votes += change
-                self.save_data()
-                return answer
-        
-        raise ValidationError("Respuesta no encontrada")
-    
-    def _get_next_question_id(self) -> int:
-        """Obtiene el siguiente ID para una pregunta"""
-        if not self.questions:
-            return 1
-        return max(q.id for q in self.questions) + 1
-    
-    def _get_next_answer_id(self, question_id: int) -> int:
-        """Obtiene el siguiente ID para una respuesta"""
-        if question_id not in self.answers or not self.answers[question_id]:
-            return 1
-        return max(a.id for a in self.answers[question_id]) + 1
-    
-    def save_data(self) -> None:
-        """Guarda los datos en el archivo JSON"""
-        data = {
-            "questions": [q.to_dict() for q in self.questions],
-            "answers": {
-                str(qid): [a.to_dict() for a in answers]
-                for qid, answers in self.answers.items()
-            }
-        }
-        
-        with open(self.data_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-    
-    def load_data(self) -> None:
-        """Carga los datos desde el archivo JSON"""
-        if not os.path.exists(self.data_file):
-            return
+        # Actualizar votos en la base de datos
+        query = """
+            UPDATE answers
+            SET votes = votes + %s
+            WHERE id = %s AND question_id = %s
+            RETURNING id, text, votes
+        """
         
         try:
-            with open(self.data_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            
-            # Cargar preguntas
-            self.questions = [
-                Question.from_dict(q_data)
-                for q_data in data.get("questions", [])
-            ]
-            
-            # Cargar respuestas
-            self.answers = {}
-            answers_data = data.get("answers", {})
-            for qid_str, answers_list in answers_data.items():
-                qid = int(qid_str)
-                self.answers[qid] = [
-                    Answer.from_dict(a_data)
-                    for a_data in answers_list
-                ]
+            with get_db_cursor() as cursor:
+                cursor.execute(query, (change, answer_id, question_id))
+                row = cursor.fetchone()
+                
+                if not row:
+                    raise ValidationError("Respuesta no encontrada")
+                
+                answer = Answer(
+                    id=row[0],
+                    text=row[1],
+                    votes=row[2]
+                )
+                
+                logger.info(f"Voto registrado: Answer ID={answer_id}, cambio={change}, total={answer.votes}")
+                return answer
+                
+        except ValidationError:
+            raise
+        except Exception as e:
+            logger.error(f"Error al votar respuesta: {e}")
+            raise ValidationError(f"Error al votar respuesta: {str(e)}")
+    
+    def get_statistics(self) -> dict:
+        """Obtiene estadísticas de la plataforma"""
+        query = """
+            SELECT 
+                (SELECT COUNT(*) FROM questions) as total_questions,
+                (SELECT COUNT(*) FROM answers) as total_answers,
+                (SELECT COALESCE(SUM(votes), 0) FROM answers) as total_votes
+        """
         
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
-            print(f"Error al cargar datos: {e}")
-            self.questions = []
-            self.answers = {}
+        try:
+            with get_db_cursor() as cursor:
+                cursor.execute(query)
+                row = cursor.fetchone()
+                
+                return {
+                    "total_questions": row[0],
+                    "total_answers": row[1],
+                    "total_votes": row[2]
+                }
+                
+        except Exception as e:
+            logger.error(f"Error al obtener estadísticas: {e}")
+            return {
+                "total_questions": 0,
+                "total_answers": 0,
+                "total_votes": 0
+            }

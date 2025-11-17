@@ -35,7 +35,6 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
-<<<<<<< HEAD
 .nox/
 .coverage
 .coverage.*
@@ -227,7 +226,8 @@ settings.ini
 secrets.json
 credentials.json
 
-# Logs*.log
+# Logs
+*.log
 logs/
 log/
 *.log.*
@@ -326,8 +326,6 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
-# Herramientas de desarrollo
-
 # Coverage reports
 .coverage
 .coverage.*
@@ -373,19 +371,6 @@ backups/
 monitoring/
 metrics/
 
-# Documentación generada
-docs/build/
-docs/_build/
-site/
-
-
-# Archivos de Testing
-.coverage
-.pytest_cache/
-.tox/
-htmlcov/
-.coverage.*
-
 # Test databases
 test.db
 test.sqlite
@@ -413,9 +398,4 @@ todo.md
 .local/
 local/
 .private/
-private/ 
-=======
-docs/_build/
-
-.venv/
->>>>>>> b82bef38710b18067cf2a62a18c1ca9275e13ea8
+private/
