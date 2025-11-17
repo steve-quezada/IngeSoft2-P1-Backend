@@ -1,8 +1,30 @@
 services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin123
+      - POSTGRES_DB=ingesoft2
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d ingesoft2"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   # Servicio Backend (Python/Flask)
   backend:
     build:
-      context: ".."  # Un nivel arriba (hacia Proyecto Back/)
+      context: "."
       dockerfile: Dockerfile
     container_name: backend-flask
     ports:
@@ -11,11 +33,15 @@ services:
       - FLASK_ENV=production
       - FLASK_APP=app.py
       - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://admin:admin123@postgres:5432/ingesoft2
     volumes:
       - backend_logs:/var/log/supervisor
       - backend_data:/app
     networks:
       - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health || exit 1"]
@@ -27,14 +53,14 @@ services:
   # Servicio Frontend (React/Vite)
   frontend:
     build:
-      context: "../../../IngeSoft2-P1-Frontend-main"
+      context: "../Proyecto Front"
       dockerfile: Dockerfile
     container_name: frontend-react
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - REACT_APP_API_URL=http://localhost:5000
+      - VITE_API_URL=http://localhost:5000
     volumes:
       - frontend_logs:/var/log/supervisor
     networks:
@@ -49,8 +75,10 @@ services:
       retries: 3
       start_period: 40s
 
-# Volúmenes para persistir logs
+# Volúmenes para persistir logs y datos
 volumes:
+  postgres_data:
+    driver: local
   backend_logs:
     driver: local
   backend_data:
