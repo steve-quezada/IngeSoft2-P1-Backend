@@ -62,3 +62,7 @@ Thumbs.db
 # Archivos de configuración local
 .env
 .env.local
+
+# Archivos de datos antiguos (legacy)
+data.json
+test_data.json

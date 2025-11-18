@@ -198,6 +198,10 @@ tramp
 *.db
 *.sqlite
 *.sqlite3
+
+# Archivos de datos legacy
+data.json
+test_data.json
 *.db-journal
 *.db-wal
 *.db-shm

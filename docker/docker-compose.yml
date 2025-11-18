@@ -36,7 +36,7 @@ services:
       - DATABASE_URL=postgresql://admin:admin123@postgres:5432/ingesoft2
     volumes:
       - backend_logs:/var/log/supervisor
-      - backend_data:/app
+      # backend_data volumen removido - causaba que código viejo persistiera
     networks:
       - app-network
     depends_on:
