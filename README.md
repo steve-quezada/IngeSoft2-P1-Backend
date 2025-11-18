@@ -1,191 +1,347 @@
-## P1-Backend: API REST
+# Práctica 4 - Despliegue en AWS con Terraform [Nube + Servicios (Cuenta AWS + Terraform)]
 
-### Descripción del Proyecto
+### Integrantes
+- **Steve Quezada** (@steve-quezada)
+- **Etnicst** (@etnicst)
 
-Sistema backend con Flask que implementa una API REST para un foro de preguntas y respuestas.
+### Repositorios
+- Backend: [github.com/steve-quezada/IngeSoft2-P1-Backend](https://github.com/steve-quezada/IngeSoft2-P1-Backend)
+- Frontend: [github.com/steve-quezada/IngeSoft2-P1-Frontend](https://github.com/steve-quezada/IngeSoft2-P1-Frontend)
 
-### Funcionalidades Implementadas
+### Prerequisitos AWS
+- Cuenta AWS creada con Plan Gratuito
+- Usuarios IAM creados: `steve-quezada`, `etnicst`, `mauricioriva`, `cofy43`
+- Presupuesto Zero-Spend configurado
+- AWS CLI instalado y configurado (región: `us-east-1`)
+- Terraform instalado
 
-#### Módulo Principal:
+### Infraestructura Desplegada (26 recursos)
+- **VPC**: Red virtual 10.0.0.0/16 con Internet Gateway
+- **Subnets**: 3 públicas + 2 privadas en 4 AZs
+- **Security Groups**: ALB, EC2, RDS con reglas específicas
+- **EC2 Instances**: 2 x t3.micro (Frontend + Backend) con Docker
+- **RDS PostgreSQL**: db.t3.micro en subnet privada
+- **Application Load Balancer**: Distribución de tráfico HTTP
+- **ECR**: Repositorio privado para imágenes Docker
+- **SSH Keys**: Generadas automáticamente con TLS provider
 
-1. **Creación de Preguntas**
+## Arquitectura AWS
 
-2. **Listado de Preguntas**
-
-3. **Sistema de Validación**
-
-### Arquitectura del Sistema
-
-- **Lenguaje:** Python 3.13+
-    - pip (Gestor de paquetes)
-- **Framework Web:** Flask 2.3.3
-
-#### Estructura del Proyecto
+<div align="center">
 
 ```
-P1-Backend/
-├── app.py                          # Punto de entrada principal (Application Factory)
-├── requirements.txt                # Dependencias del proyecto
-├── data.json                       # Archivo de persistencia de datos
-├── config/                         # Configuración de la aplicación
-│   ├── __init__.py
-│   └── config.py                   # Configuraciones por ambiente
-├── src/                            # Código fuente principal
-│   ├── __init__.py
-│   ├── models/                     # Modelos de datos
-│   │   ├── __init__.py
-│   │   └── question.py             # Modelos de preguntas y respuestas
-│   ├── services/                   # Lógica de negocio
-│   │   ├── __init__.py
-│   │   └── question_service.py     # Servicio de preguntas y respuestas
-│   ├── routes/                     # Controladores/Endpoints
-│   │   ├── __init__.py
-│   │   └── questions.py            # Rutas de preguntas y respuestas
-│   └── utils/                      # Utilidades
-│       ├── __init__.py
-│       └── validators.py           # Validadores de datos
-└── tests/                          # Pruebas unitarias
-    ├── README_tests.md
-    ├── test_answers.py
-    └── test_questions.py
+         Internet
+         │
+         ▼
+        ┌────────────────────────────────────────┐
+        │            Internet Gateway            │
+        └────────────────────────────────────────┘
+          │
+          ▼
+        ┌───────────────────────────────────────────────────┐
+        │          Application Load Balancer (ALB)          │
+        │  ing-soft-2-alb-xxxxx.us-east-1.elb.amazonaws.com │
+        └───────────────────────────────────────────────────┘
+       │
+       ┌───────────────────┼───────────────────┐
+       ▼                   ▼                   ▼
+        ┌────────────┐       ┌────────────┐       ┌────────────┐
+        │   Subnet   │       │   Subnet   │       │   Subnet   │
+        │  Public 1  │       │  Public 2  │       │  Public 3  │
+        │ us-east-1a │       │ us-east-1b │       │ us-east-1c │
+        │            │       │            │       │            │
+        │     ECR    │       │  Frontend  │       │   Backend  │
+        │ Repository │       │    EC2     │       │    EC2     │
+        │            │       │  t3.micro  │       │  t3.micro  │
+        │            │       │   Docker   │       │   Docker   │
+        └────────────┘       └────────────┘       └────────────┘
+                                                  │
+                                                  ▼
+                                                  ┌────────────┐
+                                                  │   Subnet   │
+                                                  │   Private  │
+                                                  │ us-east-1a │
+                                                  │            │
+                                                  │    RDS     │
+                                                  │ PostgreSQL │
+                                                  │ db.t3.micro│
+                                                  └────────────┘
 ```
 
-#### Instalación y Configuración
+</div>
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/etnicst/IngeSoft2-P1-Backend.git
-   ```
+## Estructura del Proyecto
 
-2. **Crear entorno virtual:**
-   ```bash
-   python -m venv .venv
-   ```
+```
+Proyecto Completo/
+├── IngeSoft2-P1-Backend/              ← Repositorio Backend
+│   ├── .github/workflows/             ←  CI/CD Pipelines
+│   │   └── backend-docker-build.yml   ← Pipeline Backend
+│   ├── terraform/                     ← Infraestructura como código
+│   │   ├── main.tf                    ← 26 recursos AWS (VPC, EC2, RDS, ALB, ECR)
+│   │   ├── variables.tf               ← Variables configurables (db_password, etc.)
+│   │   ├── outputs.tf                 ← Outputs (IPs, DNS, endpoints)
+│   │   ├── provider.tf                ← Providers (AWS, TLS)
+│   │   ├── ssh-key.pem                ← Llave privada SSH (generada)
+│   │   └── outputs.txt                ← Outputs guardados
+│   ├── scripts/                       ← Scripts de base de datos
+│   │   └── init.sql                   ← Schema PostgreSQL (3 tablas, índices)
+│   ├── config/                        ← Configuración
+│   │   ├── __init__.py
+│   │   ├── config.py                  ← Config Flask + Database
+│   │   └── database.py                ← Connection pool PostgreSQL
+│   ├── src/                           ← Código fuente backend
+│   │   ├── __init__.py
+│   │   ├── models/                    ← Modelos de datos
+│   │   │   ├── __init__.py
+│   │   │   └── question.py
+│   │   ├── routes/                    ← Endpoints API REST
+│   │   │   ├── __init__.py
+│   │   │   └── questions.py
+│   │   ├── services/                  ← Lógica de negocio
+│   │   │   ├── __init__.py
+│   │   │   └── question_service.py
+│   │   └── utils/                     ← Utilidades y validadores
+│   │       ├── __init__.py
+│   │       └── validators.py
+│   ├── tests/                         ← Testing (20 tests + PostgreSQL)
+│   │   ├── test_all.py                ← Tests principales
+│   │   ├── test_answers.py            ← Tests respuestas
+│   │   ├── test_integration.py        ← Tests integración
+│   │   ├── test_questions.py          ← Tests preguntas
+│   │   └── test_refactored.py         ← Tests funcionales
+│   ├── docker/                        ← Orquestación
+│   │   ├── docker-compose.yml         ← Desarrollo
+│   │   └── docker-compose.prod.yml    ← Producción
+│   ├── Dockerfile                     ← Multi-stage build Python 3.11
+│   ├── requirements.txt               ← Dependencias (Flask, PostgreSQL, etc.)
+│   ├── supervisord.conf               ← Supervisor para procesos
+│   └── app.py                         ← Aplicación Flask principal
+│
+└── IngeSoft2-P1-Frontend/             ← Repositorio Frontend
+    ├── .github/workflows/             ←  CI/CD Pipelines
+    │   └── frontend-docker-build.yml  ← Pipeline Frontend
+    ├── Dockerfile                     ← Multi-stage build Node 20 (con VITE_API_URL)
+    ├── supervisord.conf               ← Supervisor para procesos
+    ├── proyecto-is2/                  ← Aplicación React/Vite
+    │   ├── package.json               ← Dependencias + scripts test
+    │   ├── package-lock.json          ← Lock para reproducibilidad
+    │   ├── vite.config.js             ← Config Vitest
+    │   ├── src/                       ← Código React
+    │   │   ├── services/
+    │   │   │   └── api.js             ← Configurado con import.meta.env
+    │   │   ├── __tests__/             ←  Tests frontend (Vitest)
+    │   │   │   ├── App.test.jsx       ← Test componente principal
+    │   │   │   ├── InputPregunta.test.jsx  ← Test formulario
+    │   │   │   └── frontend-integration.test.js  ← Test integración
+    │   │   └── test/setup.js          ← Setup testing-library
+    │   └── public/                    ← Assets estáticos
+```
 
-3. **Activar entorno virtual:**
-   ```bash
-   # Windows
-   .venv\Scripts\activate
-   
-   # Linux/macOS
-   source .venv/bin/activate
-   ```
+## URLs de Acceso (Producción AWS)
 
-4. **Instalar dependencias:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Aplicación Desplegada
+```bash
+# Application Load Balancer (Principal)
+http://ing-soft-2-alb-2048922367.us-east-1.elb.amazonaws.com
 
-### Ejecución del Sistema
+# Frontend directo (EC2)
+http://44.203.12.111
+
+# Backend API (EC2)
+http://13.220.107.106/questions
+http://13.220.107.106/health
+```
+
+### Recursos AWS
+```bash
+# RDS PostgreSQL Endpoint
+ing-soft-2-db.c2zsu6mmqs1n.us-east-1.rds.amazonaws.com:5432
+
+# ECR Repository
+311136344575.dkr.ecr.us-east-1.amazonaws.com/mi-app-repo
+```
+
+## Configuración y Despliegue
+
+### 1. Clonar Repositorio
+
+### 2. Configurar AWS CLI
 
 ```bash
-python app.py
+# Instalar AWS CLI v2
+
+# Configurar credenciales
+aws configure
+# AWS Access Key ID
+# AWS Secret Access Key
+# Default region name: us-east-1
+# Default output format: json
+
+# Verificar configuración
+aws sts get-caller-identity
 ```
 
-#### Configuración de Servidor
-El servidor se ejecuta por defecto en:
-- **Host:** 127.0.0.1 (localhost)
-- **Puerto:** 5000
-- **Modo:** Debug activado
-- **URL de acceso:** http://127.0.0.1:5000
+### 3. Configurar Variables de Terraform
 
-#### Salida Esperada del Sistema
-```
-* Serving Flask app 'app'
-* Debug mode: on
-WARNING: This is a development server. Do not use it in a production deployment.
-* Running on http://127.0.0.1:5000
-Press CTRL+C to quit
-* Restarting with stat
-* Debugger is active!
-* Debugger PIN: [PIN-NUMBER]
-```
-
-### Documentación de la API
-
-#### URL Base
-```
-http://127.0.0.1:5000
-```
-
-#### Endpoint 1: Crear Pregunta
-
-**Método:** POST  
-**Ruta:** /questions  
-**Content-Type:** application/json
-
-**Parámetros de Entrada:**
-| Parámetro | Tipo | Requerido | Descripción |
-|-----------|------|-----------|-------------|
-| title | string | Sí | Título de la pregunta (5-80 caracteres) |
-| description | string | No | Descripción detallada (máximo 300 caracteres) |
-| anonymous | boolean | No | Modo de publicación anónima (default: false) |
-
-**Ejemplo de Petición:**
-```json
-{
-  "title": "¿Cómo implementar una API REST con Flask?",
-  "description": "Necesito ayuda para crear endpoints básicos",
-  "anonymous": false
-}
-```
-
-**Respuesta Exitosa (HTTP 201):**
-```json
-{
-  "id": 1,
-  "title": "¿Cómo implementar una API REST con Flask?",
-  "description": "Necesito ayuda para crear endpoints básicos",
-  "author": "Usuario"
-}
-```
-
-**Respuesta de Error (HTTP 400):**
-```json
-{
-  "error": "El título debe tener entre 5 y 80 caracteres"
-}
-```
-
-#### Endpoint 2: Listar Preguntas
-
-**Método:** GET  
-**Ruta:** /questions
-
-**Respuesta Exitosa (HTTP 200):**
-```json
-[
-  {
-    "id": 3,
-    "title": "Pregunta más reciente",
-    "description": "Esta aparece primero",
-    "author": "Anónimo"
-  },
-  {
-    "id": 2,
-    "title": "Segunda pregunta",
-    "description": "Esta aparece segunda",
-    "author": "Usuario"
-  },
-  {
-    "id": 1,
-    "title": "Primera pregunta",
-    "description": "Esta aparece última",
-    "author": "Usuario"
-  }
-]
-```
-
-**Respuesta Exitosa (HTTP 200):**
-```json
-[]
-```
-
-### Prueba rapida del Sistema
 ```bash
-# Crear pregunta
-curl -X POST "http://127.0.0.1:5000/questions" -H "Content-Type: application/json" -d '{"title": "¿Qué es Flask?", "description": "Duda sobre Flask", "anonymous": false}'
+cd terraform
 
-# Listar preguntas
-curl http://127.0.0.1:5000/questions
+# Editar variables.tf
+code variables.tf
+```
+
+**Variables críticas**:
+- `db_password`: Contraseña de RDS PostgreSQL ("123456Absrc")
+- `my_ip_cidr`: Tu IP para acceso SSH (por defecto 0.0.0.0/0)
+- `app_name`: Nombre base de recursos (ing-soft-2)
+- `region`: Región AWS (us-east-1)
+
+### 4. Desplegar Infraestructura con Terraform
+
+```bash
+# Inicializar Terraform
+terraform init
+
+# Validar sintaxis
+terraform validate
+
+# Ver plan de ejecución (26 recursos)
+terraform plan
+
+# Aplicar cambios (crear infraestructura)
+terraform apply
+# Escribir: yes
+
+# Guardar outputs importantes
+terraform output -raw ec2_private_key_pem > ssh-key.pem
+terraform output > outputs.txt
+
+# Configurar permisos de SSH key (Windows)
+icacls ssh-key.pem /inheritance:r /grant:r "$env:USERNAME:R"
+```
+
+### 5. Construir y Subir Imágenes Docker
+
+```bash
+# Obtener URL de ECR
+$ECR_URL = terraform output -raw ecr_repository_url
+
+# Autenticar Docker con ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_URL
+
+# Backend
+cd "../Proyecto Back"
+docker build -t backend-flask .
+docker tag backend-flask:latest ${ECR_URL}:backend-latest
+docker push ${ECR_URL}:backend-latest
+
+# Frontend (con variable de entorno)
+cd "../Proyecto Front"
+docker build --build-arg VITE_API_URL=http://13.220.107.106 -t frontend-react .
+docker tag frontend-react:latest ${ECR_URL}:frontend-latest
+docker push ${ECR_URL}:frontend-latest
+```
+
+### 6. Desplegar Backend en EC2
+
+```bash
+# Conectar a EC2 Backend
+ssh -i terraform/ssh-key.pem ec2-user@13.220.107.106
+
+# Dentro del servidor:
+# Configurar AWS CLI
+aws configure
+
+# Autenticar con ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 311136344575.dkr.ecr.us-east-1.amazonaws.com
+
+# Descargar imagen
+docker pull 311136344575.dkr.ecr.us-east-1.amazonaws.com/mi-app-repo:backend-latest
+
+# Ejecutar contenedor
+docker run -d \
+  --name backend \
+  -p 80:5000 \
+  -e DATABASE_URL="postgresql://dbadmin:123456Absrc@ing-soft-2-db.c2zsu6mmqs1n.us-east-1.rds.amazonaws.com:5432/miappdb" \
+  311136344575.dkr.ecr.us-east-1.amazonaws.com/mi-app-repo:backend-latest
+
+# Verificar
+docker ps
+docker logs backend
+
+exit
+```
+
+### 7. Inicializar Base de Datos
+
+```bash
+# Copiar script SQL al EC2
+scp -i terraform/ssh-key.pem scripts/init.sql ec2-user@13.220.107.106:~/
+
+# Conectar y ejecutar
+ssh -i terraform/ssh-key.pem ec2-user@13.220.107.106
+
+# Crear script de inicialización
+cat > /tmp/run_init.py << 'EOF'
+import psycopg2
+conn = psycopg2.connect('postgresql://dbadmin:123456Absrc@ing-soft-2-db.c2zsu6mmqs1n.us-east-1.rds.amazonaws.com:5432/miappdb')
+cur = conn.cursor()
+with open('/tmp/init.sql', 'r') as f:
+    sql = f.read()
+cur.execute(sql)
+conn.commit()
+conn.close()
+EOF
+
+# Copiar archivos al contenedor
+docker cp ~/init.sql backend:/tmp/init.sql
+docker cp /tmp/run_init.py backend:/tmp/run_init.py
+
+# Ejecutar inicialización
+docker exec backend python /tmp/run_init.py
+
+exit
+```
+
+### 8. Desplegar Frontend en EC2
+
+```bash
+# Conectar a EC2 Frontend
+ssh -i terraform/ssh-key.pem ec2-user@44.203.12.111
+
+# Configurar AWS CLI
+aws configure
+
+# Autenticar con ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 311136344575.dkr.ecr.us-east-1.amazonaws.com
+
+# Descargar y ejecutar
+docker pull 311136344575.dkr.ecr.us-east-1.amazonaws.com/mi-app-repo:frontend-latest
+docker run -d \
+  --name frontend \
+  -p 80:3000 \
+  311136344575.dkr.ecr.us-east-1.amazonaws.com/mi-app-repo:frontend-latest
+
+# Verificar
+docker ps
+docker logs frontend
+
+exit
+```
+
+### Verificar Estado de Recursos
+
+```bash
+# AWS Console
+# - VPC: https://console.aws.amazon.com/vpc/
+# - EC2: https://console.aws.amazon.com/ec2/
+# - RDS: https://console.aws.amazon.com/rds/
+# - Load Balancers: EC2 > Load Balancers
+# - ECR: https://console.aws.amazon.com/ecr/
+
+# Terraform
+cd terraform
+terraform state list  # Listar 26 recursos
+terraform show        # Ver detalles completos
 ```
