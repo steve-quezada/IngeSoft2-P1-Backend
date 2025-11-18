@@ -143,14 +143,14 @@ Proyecto Completo/
 ### Aplicación Desplegada
 ```bash
 # Application Load Balancer (Principal)
-http://ing-soft-2-alb-2048922367.us-east-1.elb.amazonaws.com
+http://ing-soft-2-alb-1167984181.us-east-1.elb.amazonaws.com
 
 # Frontend directo (EC2)
-http://44.203.12.111
+http://98.92.205.135
 
 # Backend API (EC2)
-http://13.220.107.106/questions
-http://13.220.107.106/health
+http://54.197.12.24/questions
+http://54.197.12.24/health
 ```
 
 ### Recursos AWS
@@ -236,9 +236,9 @@ docker build -t backend-flask .
 docker tag backend-flask:latest ${ECR_URL}:backend-latest
 docker push ${ECR_URL}:backend-latest
 
-# Frontend (con variable de entorno)
+# Frontend (con variable de entorno - usar IP actual del backend)
 cd "../Proyecto Front"
-docker build --build-arg VITE_API_URL=http://13.220.107.106 -t frontend-react .
+docker build --build-arg VITE_API_URL=http://54.197.12.24 -t frontend-react .
 docker tag frontend-react:latest ${ECR_URL}:frontend-latest
 docker push ${ECR_URL}:frontend-latest
 ```
@@ -247,7 +247,7 @@ docker push ${ECR_URL}:frontend-latest
 
 ```bash
 # Conectar a EC2 Backend
-ssh -i terraform/ssh-key.pem ec2-user@13.220.107.106
+ssh -i terraform/temp-key.pem ec2-user@54.197.12.24
 
 # Dentro del servidor:
 # Configurar AWS CLI
@@ -277,13 +277,11 @@ exit
 
 ```bash
 # Copiar script SQL al EC2
-scp -i terraform/ssh-key.pem scripts/init.sql ec2-user@13.220.107.106:~/
+scp -i terraform/temp-key.pem scripts/init.sql ec2-user@54.197.12.24:~/
 
-# Conectar y ejecutar
-ssh -i terraform/ssh-key.pem ec2-user@13.220.107.106
-
-# Crear script de inicialización
-cat > /tmp/run_init.py << 'EOF'
+# Conectar y ejecutar desde máquina local (PowerShell)
+ssh -i terraform/temp-key.pem ec2-user@54.197.12.24 @"
+cat > /tmp/init_db.py << 'EOFPY'
 import psycopg2
 conn = psycopg2.connect('postgresql://dbadmin:123456Absrc@ing-soft-2-db.c2zsu6mmqs1n.us-east-1.rds.amazonaws.com:5432/miappdb')
 cur = conn.cursor()
@@ -292,23 +290,19 @@ with open('/tmp/init.sql', 'r') as f:
 cur.execute(sql)
 conn.commit()
 conn.close()
-EOF
-
-# Copiar archivos al contenedor
+print('Database initialized successfully')
+EOFPY
 docker cp ~/init.sql backend:/tmp/init.sql
-docker cp /tmp/run_init.py backend:/tmp/run_init.py
-
-# Ejecutar inicialización
-docker exec backend python /tmp/run_init.py
-
-exit
+docker cp /tmp/init_db.py backend:/tmp/init_db.py
+docker exec backend python /tmp/init_db.py
+"@
 ```
 
 ### 8. Desplegar Frontend en EC2
 
 ```bash
 # Conectar a EC2 Frontend
-ssh -i terraform/ssh-key.pem ec2-user@44.203.12.111
+ssh -i terraform/temp-key.pem ec2-user@98.92.205.135
 
 # Configurar AWS CLI
 aws configure
@@ -328,6 +322,26 @@ docker ps
 docker logs frontend
 
 exit
+```
+
+### 9. Verificación Completa del Despliegue
+
+```bash
+# Verificar Backend
+curl http://54.197.12.24/health
+curl http://54.197.12.24/questions
+
+# Verificar Frontend
+curl -I http://98.92.205.135
+
+# Verificar Application Load Balancer
+curl -I http://ing-soft-2-alb-1167984181.us-east-1.elb.amazonaws.com
+
+# Ver contenedores en Backend EC2
+ssh -i terraform/temp-key.pem ec2-user@54.197.12.24 "docker ps"
+
+# Ver contenedores en Frontend EC2
+ssh -i terraform/temp-key.pem ec2-user@98.92.205.135 "docker ps"
 ```
 
 ### Verificar Estado de Recursos
