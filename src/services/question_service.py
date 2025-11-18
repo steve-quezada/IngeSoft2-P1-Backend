@@ -36,16 +36,17 @@ class QuestionService:
         
         # Insertar en la base de datos
         query = """
-            INSERT INTO questions (title, description)
-            VALUES (%s, %s)
-            RETURNING id, title, description, created_at
+            INSERT INTO questions (title, description, author)
+            VALUES (%s, %s, %s)
+            RETURNING id, title, description, author, created_at
         """
         
         try:
             with get_db_cursor() as cursor:
                 cursor.execute(query, (
                     request.title.strip(),
-                    request.description.strip()
+                    request.description.strip(),
+                    request.get_author()
                 ))
                 
                 row = cursor.fetchone()
@@ -54,7 +55,7 @@ class QuestionService:
                     id=row[0],
                     title=row[1],
                     description=row[2],
-                    author=request.get_author()
+                    author=row[3]
                 )
                 
                 logger.info(f"Pregunta creada: ID={question.id}")
@@ -67,7 +68,7 @@ class QuestionService:
     def get_questions(self) -> List[Question]:
         """Obtiene todas las preguntas ordenadas por más reciente"""
         query = """
-            SELECT id, title, description, created_at
+            SELECT id, title, description, author, created_at
             FROM questions
             ORDER BY created_at DESC
         """
@@ -82,7 +83,7 @@ class QuestionService:
                         id=row[0],
                         title=row[1],
                         description=row[2],
-                        author="anonymous"  # Por ahora no guardamos autor
+                        author=row[3]
                     )
                     for row in rows
                 ]
@@ -97,7 +98,7 @@ class QuestionService:
     def get_question_by_id(self, question_id: int) -> Optional[Question]:
         """Obtiene una pregunta por su ID"""
         query = """
-            SELECT id, title, description, created_at
+            SELECT id, title, description, author, created_at
             FROM questions
             WHERE id = %s
         """
@@ -114,7 +115,7 @@ class QuestionService:
                     id=row[0],
                     title=row[1],
                     description=row[2],
-                    author="anonymous"
+                    author=row[3]
                 )
                 
                 return question

@@ -247,7 +247,7 @@ docker push ${ECR_URL}:frontend-latest
 
 ```bash
 # Conectar a EC2 Backend
-ssh -i terraform/temp-key.pem ec2-user@54.197.12.24
+ssh -i terraform/ssh-key.pem ec2-user@54.197.12.24
 
 # Dentro del servidor:
 # Configurar AWS CLI
@@ -277,10 +277,10 @@ exit
 
 ```bash
 # Copiar script SQL al EC2
-scp -i terraform/temp-key.pem scripts/init.sql ec2-user@54.197.12.24:~/
+scp -i terraform/ssh-key.pem scripts/init.sql ec2-user@54.197.12.24:~/
 
 # Conectar y ejecutar desde máquina local (PowerShell)
-ssh -i terraform/temp-key.pem ec2-user@54.197.12.24 @"
+ssh -i terraform/ssh-key.pem ec2-user@54.197.12.24 @"
 cat > /tmp/init_db.py << 'EOFPY'
 import psycopg2
 conn = psycopg2.connect('postgresql://dbadmin:123456Absrc@ing-soft-2-db.c2zsu6mmqs1n.us-east-1.rds.amazonaws.com:5432/miappdb')
@@ -302,7 +302,7 @@ docker exec backend python /tmp/init_db.py
 
 ```bash
 # Conectar a EC2 Frontend
-ssh -i terraform/temp-key.pem ec2-user@98.92.205.135
+ssh -i terraform/ssh-key.pem ec2-user@98.92.205.135
 
 # Configurar AWS CLI
 aws configure
@@ -338,10 +338,10 @@ curl -I http://98.92.205.135
 curl -I http://ing-soft-2-alb-1167984181.us-east-1.elb.amazonaws.com
 
 # Ver contenedores en Backend EC2
-ssh -i terraform/temp-key.pem ec2-user@54.197.12.24 "docker ps"
+ssh -i terraform/ssh-key.pem ec2-user@54.197.12.24 "docker ps"
 
 # Ver contenedores en Frontend EC2
-ssh -i terraform/temp-key.pem ec2-user@98.92.205.135 "docker ps"
+ssh -i terraform/ssh-key.pem ec2-user@98.92.205.135 "docker ps"
 ```
 
 ### Verificar Estado de Recursos
