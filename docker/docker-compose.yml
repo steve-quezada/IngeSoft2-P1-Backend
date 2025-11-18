@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - app-network
     healthcheck:
@@ -24,7 +24,7 @@ services:
   # Servicio Backend (Python/Flask)
   backend:
     build:
-      context: "."
+      context: ".."
       dockerfile: Dockerfile
     container_name: backend-flask
     ports:
@@ -53,7 +53,7 @@ services:
   # Servicio Frontend (React/Vite)
   frontend:
     build:
-      context: "../Proyecto Front"
+      context: "../../Proyecto Front"
       dockerfile: Dockerfile
     container_name: frontend-react
     ports:
