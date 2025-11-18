@@ -15,13 +15,13 @@
 - AWS CLI instalado y configurado (región: `us-east-1`)
 - Terraform instalado
 
-### Infraestructura Desplegada (26 recursos)
+### Infraestructura Desplegada (29 recursos)
 - **VPC**: Red virtual 10.0.0.0/16 con Internet Gateway
 - **Subnets**: 3 públicas + 2 privadas en 4 AZs
 - **Security Groups**: ALB, EC2, RDS con reglas específicas
 - **EC2 Instances**: 2 x t3.micro (Frontend + Backend) con Docker
 - **RDS PostgreSQL**: db.t3.micro en subnet privada
-- **Application Load Balancer**: Distribución de tráfico HTTP
+- **Application Load Balancer**: Distribución de tráfico HTTP con 2 Target Groups
 - **ECR**: Repositorio privado para imágenes Docker
 - **SSH Keys**: Generadas automáticamente con TLS provider
 
@@ -77,9 +77,9 @@ Proyecto Completo/
 ├── IngeSoft2-P1-Backend/              ← Repositorio Backend
 │   ├── .github/workflows/             ←  CI/CD Pipelines
 │   │   └── backend-docker-build.yml   ← Pipeline Backend
-│   ├── terraform/                     ← Infraestructura como código
-│   │   ├── main.tf                    ← 26 recursos AWS (VPC, EC2, RDS, ALB, ECR)
-│   │   ├── variables.tf               ← Variables configurables (db_password, etc.)
+   ├── terraform/                     ← Infraestructura como código
+   │   ├── main.tf                    ← 29 recursos AWS (VPC, EC2, RDS, ALB, ECR)
+   │   ├── variables.tf               ← Variables configurables (db_password, etc.)
 │   │   ├── outputs.tf                 ← Outputs (IPs, DNS, endpoints)
 │   │   ├── provider.tf                ← Providers (AWS, TLS)
 │   │   ├── ssh-key.pem                ← Llave privada SSH (generada)
@@ -206,7 +206,7 @@ terraform init
 # Validar sintaxis
 terraform validate
 
-# Ver plan de ejecución (26 recursos)
+# Ver plan de ejecución (29 recursos)
 terraform plan
 
 # Aplicar cambios (crear infraestructura)
@@ -356,6 +356,6 @@ ssh -i terraform/temp-key.pem ec2-user@98.92.205.135 "docker ps"
 
 # Terraform
 cd terraform
-terraform state list  # Listar 26 recursos
+terraform state list  # Listar 29 recursos
 terraform show        # Ver detalles completos
 ```
