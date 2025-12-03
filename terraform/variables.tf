@@ -167,3 +167,4 @@ variable "domain_name" {
   type        = string
   default     = "is2-ss.me"
 }
+
