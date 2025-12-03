@@ -77,9 +77,9 @@ Proyecto Completo/
 ├── IngeSoft2-P1-Backend/              ← Repositorio Backend
 │   ├── .github/workflows/             ←  CI/CD Pipelines
 │   │   └── backend-docker-build.yml   ← Pipeline Backend
-   ├── terraform/                     ← Infraestructura como código
-   │   ├── main.tf                    ← 29 recursos AWS (VPC, EC2, RDS, ALB, ECR)
-   │   ├── variables.tf               ← Variables configurables (db_password, etc.)
+│   ├── terraform/                     ← Infraestructura como código
+│   │   ├── main.tf                    ← 29 recursos AWS (VPC, EC2, RDS, ALB, ECR)
+│   │   ├── variables.tf               ← Variables configurables (db_password, etc.)
 │   │   ├── outputs.tf                 ← Outputs (IPs, DNS, endpoints)
 │   │   ├── provider.tf                ← Providers (AWS, TLS)
 │   │   ├── ssh-key.pem                ← Llave privada SSH (generada)
