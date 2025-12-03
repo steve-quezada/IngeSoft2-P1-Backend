@@ -428,3 +428,73 @@ resource "aws_lb_target_group_attachment" "backend" {
   target_id        = aws_instance.back.id
   port             = 80
 }
+
+# ==================================
+# PRÁCTICA 5: Elastic IPs y Route 53
+# ==================================
+
+# Elastic IP para Frontend - IP estática que sobrevive recreación de instancias
+resource "aws_eip" "frontend" {
+  domain = "vpc"
+
+  tags = {
+    Name = "${var.app_name}-frontend-eip"
+  }
+}
+
+# Elastic IP para Backend - IP estática que sobrevive recreación de instancias
+resource "aws_eip" "backend" {
+  domain = "vpc"
+
+  tags = {
+    Name = "${var.app_name}-backend-eip"
+  }
+}
+
+# Asociar Elastic IP al Frontend
+resource "aws_eip_association" "frontend" {
+  instance_id   = aws_instance.front.id
+  allocation_id = aws_eip.frontend.id
+}
+
+# Asociar Elastic IP al Backend
+resource "aws_eip_association" "backend" {
+  instance_id   = aws_instance.back.id
+  allocation_id = aws_eip.backend.id
+}
+
+# Route 53 Hosted Zone - Zona DNS para el dominio
+resource "aws_route53_zone" "main" {
+  name = var.domain_name
+
+  tags = {
+    Name = "${var.app_name}-hosted-zone"
+  }
+}
+
+# Registro A para el dominio raíz
+resource "aws_route53_record" "root" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = var.domain_name
+  type    = "A"
+  ttl     = 300
+  records = [aws_eip.frontend.public_ip]
+}
+
+# Registro A para www -> Frontend
+resource "aws_route53_record" "www" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "www.${var.domain_name}"
+  type    = "A"
+  ttl     = 300
+  records = [aws_eip.frontend.public_ip]
+}
+
+# Registro A para api -> Backend
+resource "aws_route53_record" "api" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "api.${var.domain_name}"
+  type    = "A"
+  ttl     = 300
+  records = [aws_eip.backend.public_ip]
+}

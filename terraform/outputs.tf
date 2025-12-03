@@ -36,3 +36,37 @@ output "ec2_private_key_pem" {
   value       = length(tls_private_key.generated) > 0 ? tls_private_key.generated[0].private_key_pem : ""
   sensitive   = true
 }
+
+# ===============================================
+# PRÁCTICA 5: Outputs para Elastic IPs y Route 53
+# ===============================================
+
+# Elastic IP del Frontend (IP estática)
+output "frontend_elastic_ip" {
+  description = "Elastic IP estática asignada al Frontend"
+  value       = aws_eip.frontend.public_ip
+}
+
+# Elastic IP del Backend (IP estática)
+output "backend_elastic_ip" {
+  description = "Elastic IP estática asignada al Backend"
+  value       = aws_eip.backend.public_ip
+}
+
+# Nameservers de Route 53 (COPIAR a Namecheap)
+output "route53_nameservers" {
+  description = "Nameservers de Route 53 - Configurar en Namecheap para delegar DNS"
+  value       = aws_route53_zone.main.name_servers
+}
+
+# URL del dominio (Frontend)
+output "domain_url" {
+  description = "URL del dominio principal (Frontend)"
+  value       = "http://${var.domain_name}"
+}
+
+# URL del API (Backend)
+output "api_url" {
+  description = "URL del subdominio API (Backend)"
+  value       = "http://api.${var.domain_name}"
+}

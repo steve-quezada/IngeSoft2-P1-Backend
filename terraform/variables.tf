@@ -156,3 +156,14 @@ variable "db_password" {
   sensitive   = true
   default = "123456Absrc"
 }
+
+# ===================================
+# PRÁCTICA 5: Variables para Route 53
+# ===================================
+
+# Nombre del dominio (comprado en Namecheap)
+variable "domain_name" {
+  description = "Nombre del dominio para Route 53"
+  type        = string
+  default     = "is2-ss.me"
+}
